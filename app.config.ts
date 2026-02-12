@@ -5,18 +5,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "MeetMate",
   slug: "MeetMate",
   version: "1.0.0",
+  owner: "castelukedevs",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "meetmate",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
+    bundleIdentifier: "com.castelukedevs.meetmate",
     supportsTablet: true,
     infoPlist: {
       UIBackgroundModes: ["audio"],
     },
   },
   android: {
+    package: "com.castelukedevs.meetmate",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -49,5 +52,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: "8c64daa9-27d9-4791-9948-ef691fa9aad6",
+    },
   },
 });
