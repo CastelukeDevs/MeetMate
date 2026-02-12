@@ -1,16 +1,17 @@
-import { useRouter } from "expo-router";
+import { SplashScreen, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      router.replace("/onboard");
-    }, 0);
-
-    return () => clearTimeout(timeout);
+    // const timeout = setTimeout(() => {
+    //   router.replace("/onboard");
+    // }, 0);
+    // return () => clearTimeout(timeout);
   }, []);
 
   return (
