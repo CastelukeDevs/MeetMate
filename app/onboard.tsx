@@ -2,7 +2,7 @@ import { Onboarding, useOnboarding } from "@/components/ui/onboarding";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 
-export const OnboardingPresets = {
+const OnboardingPresets = {
   welcome: [
     {
       id: "welcome",
@@ -77,7 +77,7 @@ export const OnboardingPresets = {
   ],
 };
 
-export function OnboardingDemo() {
+function OnboardingDemo() {
   const { hasCompletedOnboarding, completeOnboarding, skipOnboarding } =
     useOnboarding();
 
@@ -112,3 +112,5 @@ export function OnboardingDemo() {
     />
   );
 }
+
+export default OnboardingDemo;

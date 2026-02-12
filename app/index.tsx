@@ -1,7 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { View } from "react-native";
 
 export default function Index() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.replace("/onboard");
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <View
       style={{
@@ -9,9 +20,6 @@ export default function Index() {
         justifyContent: "center",
         alignItems: "center",
       }}
-    >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
-      <Button>Test</Button>
-    </View>
+    ></View>
   );
 }
