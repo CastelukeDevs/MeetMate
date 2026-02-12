@@ -1,3 +1,4 @@
+import { ToastProvider } from "@/components/ui/toast";
 import AuthProvider, { useAuthContext } from "@/hooks/useAuthContext";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { Stack } from "expo-router";
@@ -9,8 +10,8 @@ function RootNavigation() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding" />
       <Stack.Protected guard={!isLoggedIn}>
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="auth" />
       </Stack.Protected>
       <Stack.Protected guard={isLoggedIn}>
@@ -26,8 +27,10 @@ export default function RootLayout() {
     <AuthProvider>
       <GestureHandlerRootView>
         <ThemeProvider>
-          <RootNavigation />
-          <StatusBar style="auto" />
+          <ToastProvider>
+            <RootNavigation />
+            <StatusBar style="auto" />
+          </ToastProvider>
         </ThemeProvider>
       </GestureHandlerRootView>
     </AuthProvider>
