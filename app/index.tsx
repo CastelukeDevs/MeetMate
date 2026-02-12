@@ -1,18 +1,30 @@
-import { SplashScreen, useRouter } from "expo-router";
+import useAppDefault from "@/hooks/store/useAppDefault";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { router, SplashScreen } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
-  const router = useRouter();
+  const { isLoading, isLoggedIn } = useAuthContext();
+  const { isFirstTime } = useAppDefault();
+
+  console.log("isFirstTime? index?", isFirstTime);
 
   useEffect(() => {
-    // const timeout = setTimeout(() => {
-    //   router.replace("/onboard");
-    // }, 0);
-    // return () => clearTimeout(timeout);
-  }, []);
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+
+      if (isFirstTime && !isLoggedIn) {
+        router.replace("/onboarding");
+      } else if (!isFirstTime && !isLoggedIn) {
+        router.replace("/auth");
+      } else {
+        router.replace("/(tabs)");
+      }
+    }
+  }, [isLoading, isFirstTime, isLoggedIn]);
 
   return (
     <View

@@ -1,6 +1,8 @@
 import { Onboarding, useOnboarding } from "@/components/ui/onboarding";
 import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
+import useAppDefault from "@/hooks/store/useAppDefault";
+import { router } from "expo-router";
+import { useEffect } from "react";
 
 const OnboardingPresets = {
   welcome: [
@@ -81,21 +83,14 @@ function OnboardingDemo() {
   const { hasCompletedOnboarding, completeOnboarding, skipOnboarding } =
     useOnboarding();
 
-  if (hasCompletedOnboarding) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 24,
-        }}
-      >
-        <Text variant="title">Welcome Back!</Text>
-        <Text variant="body">You've already completed the onboarding.</Text>
-      </View>
-    );
-  }
+  const { setIsFirstTime } = useAppDefault();
+
+  useEffect(() => {
+    if (hasCompletedOnboarding) {
+      router.replace("/auth");
+      setIsFirstTime(false);
+    }
+  }, [hasCompletedOnboarding, setIsFirstTime]);
 
   return (
     <Onboarding
