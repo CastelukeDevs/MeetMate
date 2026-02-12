@@ -16,6 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     infoPlist: {
       UIBackgroundModes: ["audio"],
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
@@ -48,6 +49,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     "expo-sqlite",
+    "expo-asset",
   ],
   experiments: {
     typedRoutes: true,
