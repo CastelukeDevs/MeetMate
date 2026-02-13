@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { createNewMeeting } from "@/utils/meetingManager";
+import { processMeetingTranscript } from "@/utils/processTranscript";
 import {
   getAudioFileInfo,
   uploadAudioToSupabase,
@@ -49,19 +50,19 @@ function Index() {
         },
       );
 
-      if (result.success) {
-        console.log(`✅ Recording uploaded!\n📍 URL: ${result.url}`);
-      } else {
+      if (!result.success) {
         console.error(`❌ Upload failed: ${result.error}`);
       }
+      const saveResult = await createNewMeeting(
+        result.url!,
+        defaultFileName || `Meeting_${new Date().toISOString()}`,
+      );
 
-      if (result.url) {
-        const saveResult = await createNewMeeting(
-          result.url,
-          defaultFileName || `Meeting_${new Date().toISOString()}`,
-        );
-        console.log("save result =>", saveResult);
-      }
+      const processMeeting = await processMeetingTranscript(
+        saveResult.id,
+        saveResult.recording,
+      );
+      console.log("Processed meeting transcript:", processMeeting);
 
       setRecordingSession(Date.now());
     } catch (error) {
