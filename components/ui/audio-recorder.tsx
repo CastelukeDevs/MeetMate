@@ -32,6 +32,7 @@ export interface AudioRecorderProps {
   onRecordingComplete?: (uri: string) => void;
   onRecordingStart?: () => void;
   onRecordingStop?: () => void;
+  onSaveRecording?: (uri: string) => void;
   customRecordingOptions?: RecordingOptions;
 }
 
@@ -44,6 +45,7 @@ export function AudioRecorder({
   onRecordingComplete,
   onRecordingStart,
   onRecordingStop,
+  onSaveRecording,
   customRecordingOptions,
 }: AudioRecorderProps) {
   const recordingOptions =
@@ -289,8 +291,8 @@ export function AudioRecorder({
   };
 
   const handleSaveRecording = () => {
-    if (recordingUri && onRecordingComplete) {
-      onRecordingComplete(recordingUri);
+    if (recordingUri && onSaveRecording) {
+      onSaveRecording(recordingUri);
     }
   };
 

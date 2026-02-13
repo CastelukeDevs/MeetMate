@@ -1,6 +1,11 @@
 import { AudioRecorder } from "@/components/ui/audio-recorder";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import {
+  getAudioFileInfo,
+  uploadAudioToSupabase,
+  type UploadProgress,
+} from "@/utils/uploadAudio";
 import React, { useState } from "react";
 import { ActivityIndicator } from "react-native";
 
@@ -8,37 +13,37 @@ function Index() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const simulateCloudUpload = async (uri: string): Promise<string> => {
-    return new Promise((resolve) => {
+  const handleRecordingComplete = async (uri: string) => {
+    try {
       setUploading(true);
       setUploadProgress(0);
 
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setUploading(false);
-            resolve(
-              `https://cloud-storage.example.com/audio/${Date.now()}.m4a`,
-            );
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 200);
-    });
-  };
+      // Get file info for logging
+      const fileInfo = await getAudioFileInfo(uri);
+      console.log("📁 Recording file info:");
+      console.log(`  Filename: ${fileInfo.filename}`);
+      console.log(`  Type: ${fileInfo.filetype}`);
+      console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
 
-  const handleRecordingComplete = async (uri: string) => {
-    try {
-      const cloudUrl = await simulateCloudUpload(uri);
+      // Upload to Supabase with progress tracking
+      const result = await uploadAudioToSupabase(
+        uri,
+        "meetings_bucket", // bucket name
+        (progress: UploadProgress) => {
+          setUploadProgress(progress.percentage);
+        },
+      );
 
-      console.log(`Recording uploaded to cloud storage!\n\nURL: ${cloudUrl}`);
+      if (result.success) {
+        console.log(`✅ Recording uploaded!\n📍 URL: ${result.url}`);
+      } else {
+        console.error(`❌ Upload failed: ${result.error}`);
+      }
 
+      setUploading(false);
       setUploadProgress(0);
     } catch (error) {
-      console.log("Failed to upload recording to cloud storage.");
-
+      console.error("Failed to upload recording:", error);
       setUploading(false);
       setUploadProgress(0);
     }
@@ -53,6 +58,7 @@ function Index() {
           showTimer={true}
           maxDuration={1 * 60 * 60} // 1 hour
           // onRecordingComplete={handleRecordingComplete}
+          onSaveRecording={handleRecordingComplete}
         />
 
         {uploading && (

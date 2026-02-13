@@ -1,0 +1,270 @@
+import { supabase } from "@/utils/supabase";
+import { File } from "expo-file-system";
+import * as tus from "tus-js-client";
+
+export interface AudioFileInfo {
+  filename: string;
+  filetype: string;
+  size: number; // in bytes
+  sizeFormatted: string; // human readable
+}
+
+export interface UploadResult {
+  success: boolean;
+  url?: string;
+  fileInfo: AudioFileInfo;
+  error?: string;
+}
+
+export interface UploadProgress {
+  bytesUploaded: number;
+  bytesTotal: number;
+  percentage: number;
+}
+
+/**
+ * Get file info from a local URI
+ */
+export async function getAudioFileInfo(uri: string): Promise<AudioFileInfo> {
+  const file = new File(uri);
+
+  if (!file.exists) {
+    throw new Error("File does not exist");
+  }
+
+  // Get detailed file info
+  const fileInfo = file.info();
+
+  // Extract filename from URI
+  const filename = file.name || `recording_${Date.now()}.m4a`;
+
+  // Determine file type from extension
+  const extension = file.extension?.replace(".", "").toLowerCase() || "m4a";
+  const mimeTypes: Record<string, string> = {
+    m4a: "audio/mp4",
+    mp4: "audio/mp4",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    aac: "audio/aac",
+    ogg: "audio/ogg",
+    webm: "audio/webm",
+  };
+  const filetype = mimeTypes[extension] || "audio/mp4";
+
+  const size = fileInfo.size || 0;
+
+  return {
+    filename,
+    filetype,
+    size,
+    sizeFormatted: formatFileSize(size),
+  };
+}
+
+/**
+ * Format bytes to human readable string
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+/**
+ * Upload audio file to Supabase Storage using TUS (resumable uploads)
+ */
+export async function uploadAudioToSupabase(
+  uri: string,
+  bucketName: string = "recordings",
+  onProgress?: (progress: UploadProgress) => void,
+): Promise<UploadResult> {
+  try {
+    // Get file info for logging
+    const fileInfo = await getAudioFileInfo(uri);
+
+    console.log("📁 Audio File Info:");
+    console.log(`  Filename: ${fileInfo.filename}`);
+    console.log(`  Type: ${fileInfo.filetype}`);
+    console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
+
+    // Use expo-file-system File which implements Blob interface
+    const file = new File(uri);
+
+    // Get Supabase session for auth
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new Error("User not authenticated");
+    }
+
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const uniqueFilename = `${timestamp}_${fileInfo.filename}`;
+    const filePath = `${session.user.id}/${uniqueFilename}`;
+
+    // Get Supabase URL for TUS endpoint
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_STORAGE_URL as string;
+    const tusEndpoint = `${supabaseUrl}/storage/v1/upload/resumable`;
+
+    return new Promise((resolve, reject) => {
+      // expo-file-system File implements Blob interface directly
+      const upload = new tus.Upload(file as unknown as Blob, {
+        endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "x-upsert": "true",
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        metadata: {
+          bucketName: bucketName,
+          objectName: filePath,
+          contentType: fileInfo.filetype,
+          cacheControl: "3600",
+        },
+        chunkSize: 6 * 1024 * 1024, // 6MB chunks
+
+        onError: (error) => {
+          console.error("❌ Upload failed:", error);
+          resolve({
+            success: false,
+            fileInfo,
+            error: error.message,
+          });
+        },
+
+        onProgress: (bytesUploaded, bytesTotal) => {
+          const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+          console.log(`📤 Upload progress: ${percentage}%`);
+
+          onProgress?.({
+            bytesUploaded,
+            bytesTotal,
+            percentage,
+          });
+        },
+
+        onSuccess: () => {
+          // Construct the public URL
+          const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`;
+
+          console.log("✅ Upload complete!");
+          console.log(`📍 URL: ${publicUrl}`);
+
+          resolve({
+            success: true,
+            url: publicUrl,
+            fileInfo,
+          });
+        },
+      });
+
+      // Check for previous uploads and resume or start
+      upload.findPreviousUploads().then((previousUploads) => {
+        if (previousUploads.length) {
+          upload.resumeFromPreviousUpload(previousUploads[0]);
+        }
+        upload.start();
+      });
+    });
+  } catch (error) {
+    const fileInfo = {
+      filename: uri.split("/").pop() || "unknown",
+      filetype: "audio/mp4",
+      size: 0,
+      sizeFormatted: "Unknown",
+    };
+
+    console.error("❌ Upload error:", error);
+
+    return {
+      success: false,
+      fileInfo,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Simple upload using Supabase Storage SDK (non-resumable)
+ * Use this for smaller files or when TUS is not needed
+ */
+export async function uploadAudioSimple(
+  uri: string,
+  bucketName: string = "recordings",
+): Promise<UploadResult> {
+  try {
+    const fileInfo = await getAudioFileInfo(uri);
+
+    console.log("📁 Audio File Info:");
+    console.log(`  Filename: ${fileInfo.filename}`);
+    console.log(`  Type: ${fileInfo.filetype}`);
+    console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
+
+    // Use expo-file-system File which implements Blob interface
+    const file = new File(uri);
+
+    // Get session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new Error("User not authenticated");
+    }
+
+    // Generate unique path
+    const timestamp = Date.now();
+    const uniqueFilename = `${timestamp}_${fileInfo.filename}`;
+    const filePath = `${session.user.id}/${uniqueFilename}`;
+
+    // Upload using Supabase Storage - File implements Blob interface
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, file as unknown as Blob, {
+        contentType: fileInfo.filetype,
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    // Get public URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucketName).getPublicUrl(data.path);
+
+    console.log("✅ Upload complete!");
+    console.log(`📍 URL: ${publicUrl}`);
+
+    return {
+      success: true,
+      url: publicUrl,
+      fileInfo,
+    };
+  } catch (error) {
+    const fileInfo = {
+      filename: uri.split("/").pop() || "unknown",
+      filetype: "audio/mp4",
+      size: 0,
+      sizeFormatted: "Unknown",
+    };
+
+    console.error("❌ Upload error:", error);
+
+    return {
+      success: false,
+      fileInfo,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
