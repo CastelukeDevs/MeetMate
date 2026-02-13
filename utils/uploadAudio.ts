@@ -288,11 +288,13 @@ export async function getSignedUrl(
 
   // Extract path from URL if a full URL is provided
   let filePath = filePathOrUrl;
-  
+
   // Check if it's a full Supabase storage URL
   if (filePathOrUrl.includes("/storage/v1/object/public/")) {
     // Extract path after bucket name: .../public/recordings/user-id/file.m4a -> user-id/file.m4a
-    const match = filePathOrUrl.match(new RegExp(`/public/${bucketName}/(.+)$`));
+    const match = filePathOrUrl.match(
+      new RegExp(`/public/${bucketName}/(.+)$`),
+    );
     if (match) {
       filePath = decodeURIComponent(match[1]);
     }
