@@ -29,6 +29,7 @@ export interface AudioRecorderProps {
   showWaveform?: boolean;
   showTimer?: boolean;
   maxDuration?: number; // in seconds
+  sessionId?: number; // Optional session ID for reseting recorder
   onRecordingComplete?: (uri: string) => void;
   onRecordingStart?: () => void;
   onRecordingStop?: () => void;
@@ -42,6 +43,7 @@ export function AudioRecorder({
   showWaveform = true,
   showTimer = true,
   maxDuration,
+  sessionId,
   onRecordingComplete,
   onRecordingStart,
   onRecordingStop,
@@ -182,6 +184,13 @@ export function AudioRecorder({
       }
     }
   }, [isRecording, recorder]);
+
+  useEffect(() => {
+    if (sessionId) {
+      setRecordingUri(null);
+      setDuration(0);
+    }
+  }, [sessionId]);
 
   // Auto-stop recording when max duration is reached
   useEffect(() => {
