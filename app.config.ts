@@ -50,6 +50,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     "expo-sqlite",
     "expo-asset",
+    [
+      "expo-audio",
+      {
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to access your microphone to record your meetings.",
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
