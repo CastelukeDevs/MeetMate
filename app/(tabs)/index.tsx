@@ -50,20 +50,13 @@ function Index() {
         },
       );
 
-      if (!result.success) {
-        console.error(`❌ Upload failed: ${result.error}`);
-      }
       const saveResult = await createNewMeeting(
-        result.url!,
+        result.url,
         defaultFileName || `Meeting_${new Date().toISOString()}`,
       );
 
-      const processMeeting = await processMeetingTranscript(
-        saveResult.id,
-        saveResult.recording,
-      );
-      console.log("Processed meeting transcript:", processMeeting);
-
+      await processMeetingTranscript(saveResult.id, saveResult.recording);
+      console.log("Meeting transcript processing started");
       setRecordingSession(Date.now());
     } catch (error) {
       console.error("Failed to upload recording:", error);

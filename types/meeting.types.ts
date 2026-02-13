@@ -4,7 +4,11 @@ export type Meetings = {
   users: string;
   name: string;
   annotation?: any;
-  summary?: any;
+  summary?: Summary;
   inProgress: boolean;
   recording: string;
+};
+
+export type Summary = {
+  text: string;
 };

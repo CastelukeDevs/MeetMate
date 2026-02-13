@@ -41,7 +41,7 @@ const MeetingsScreen = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", paddingTop: top }}>
+    <View style={{ flex: 1, justifyContent: "center" }}>
       <FlatList
         data={meetingList}
         keyExtractor={(data) => data.id}
@@ -55,6 +55,7 @@ const MeetingsScreen = () => {
           gap: 12,
           marginBottom: bottom,
           paddingHorizontal: 8,
+          paddingTop: top,
         }}
       />
       {/* <MeetingsCard data={meetingsData} /> */}
@@ -103,12 +104,7 @@ const MeetingsCard = ({
                 {data.inProgress ? "Processing" : "Completed"}
               </Badge>
             </View>
-            {data.summary && (
-              <Text>
-                You have a new message from John Doe. Click to view the full
-                conversation and respond.
-              </Text>
-            )}
+            {data.summary && <Text>{data.summary.text}</Text>}
           </View>
         </CardContent>
       </Card>

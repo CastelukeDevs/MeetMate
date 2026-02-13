@@ -10,10 +10,8 @@ export interface AudioFileInfo {
 }
 
 export interface UploadResult {
-  success: boolean;
-  url?: string;
+  url: string;
   fileInfo: AudioFileInfo;
-  error?: string;
 }
 
 export interface UploadProgress {
@@ -133,11 +131,7 @@ export async function uploadAudioToSupabase(
 
         onError: (error) => {
           console.error("❌ Upload failed:", error);
-          resolve({
-            success: false,
-            fileInfo,
-            error: error.message,
-          });
+          reject(new Error(error.message));
         },
 
         onProgress: (bytesUploaded, bytesTotal) => {
@@ -159,7 +153,6 @@ export async function uploadAudioToSupabase(
           console.log(`📍 URL: ${publicUrl}`);
 
           resolve({
-            success: true,
             url: publicUrl,
             fileInfo,
           });
@@ -175,20 +168,8 @@ export async function uploadAudioToSupabase(
       });
     });
   } catch (error) {
-    const fileInfo = {
-      filename: uri.split("/").pop() || "unknown",
-      filetype: "audio/mp4",
-      size: 0,
-      sizeFormatted: "Unknown",
-    };
-
     console.error("❌ Upload error:", error);
-
-    return {
-      success: false,
-      fileInfo,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    throw error instanceof Error ? error : new Error("Upload failed");
   }
 }
 
@@ -247,25 +228,12 @@ export async function uploadAudioSimple(
     console.log(`📍 URL: ${publicUrl}`);
 
     return {
-      success: true,
       url: publicUrl,
       fileInfo,
     };
   } catch (error) {
-    const fileInfo = {
-      filename: uri.split("/").pop() || "unknown",
-      filetype: "audio/mp4",
-      size: 0,
-      sizeFormatted: "Unknown",
-    };
-
     console.error("❌ Upload error:", error);
-
-    return {
-      success: false,
-      fileInfo,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    throw error instanceof Error ? error : new Error("Upload failed");
   }
 }
 
