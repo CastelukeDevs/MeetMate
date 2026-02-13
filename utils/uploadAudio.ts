@@ -268,3 +268,44 @@ export async function uploadAudioSimple(
     };
   }
 }
+
+/**
+ * Get a signed URL for a file in Supabase Storage with 60-minute lifetime
+ * @param filePathOrUrl - Either a storage path (user-id/filename.m4a) or a full public URL
+ * @param bucketName - The storage bucket name (default: "recordings")
+ */
+export async function getSignedUrl(
+  filePathOrUrl: string,
+  bucketName: string = "recordings",
+): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("User not authenticated");
+  }
+
+  // Extract path from URL if a full URL is provided
+  let filePath = filePathOrUrl;
+  
+  // Check if it's a full Supabase storage URL
+  if (filePathOrUrl.includes("/storage/v1/object/public/")) {
+    // Extract path after bucket name: .../public/recordings/user-id/file.m4a -> user-id/file.m4a
+    const match = filePathOrUrl.match(new RegExp(`/public/${bucketName}/(.+)$`));
+    if (match) {
+      filePath = decodeURIComponent(match[1]);
+    }
+  }
+
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .createSignedUrl(filePath, 60 * 60); // 60 minutes in seconds
+
+  if (error) {
+    console.error("Error creating signed URL:", error);
+    throw error;
+  }
+
+  return data.signedUrl;
+}

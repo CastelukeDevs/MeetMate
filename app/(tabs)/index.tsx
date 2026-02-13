@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { createNewMeeting } from "@/utils/meetingManager";
 import {
   getAudioFileInfo,
   uploadAudioToSupabase,
@@ -54,20 +55,26 @@ function Index() {
         console.error(`❌ Upload failed: ${result.error}`);
       }
 
-      setUploading(false);
-      setUploadProgress(0);
+      if (result.url) {
+        const saveResult = await createNewMeeting(
+          result.url,
+          defaultFileName || `Meeting_${new Date().toISOString()}`,
+        );
+        console.log("save result =>", saveResult);
+      }
+
+      setRecordingSession(Date.now());
     } catch (error) {
       console.error("Failed to upload recording:", error);
+    } finally {
       setUploading(false);
       setUploadProgress(0);
-    } finally {
-      setRecordingSession(Date.now());
     }
   };
 
   const handleSaveRecording = (uri: string) => {
     saveSheet.open();
-    setDefaultFileName(`Recording_${new Date().toISOString()}`);
+    setDefaultFileName(`Meeting_${new Date().toISOString()}`);
     setRecordingUri(uri);
   };
 
@@ -107,8 +114,8 @@ function Index() {
       >
         <View style={{ gap: 8 }}>
           <Input
-            label="Filename"
-            placeholder="Enter recording name"
+            label="Meeting Name"
+            placeholder="Enter meeting name"
             value={defaultFileName}
             onChangeText={setDefaultFileName}
             variant="outline"
