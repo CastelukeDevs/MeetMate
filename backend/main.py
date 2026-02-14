@@ -10,6 +10,7 @@ import logging
 from typing import Optional, Any, List
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = FastAPI(title="MeetMate Backend")
+
+# Track service start time for uptime reporting
+START_TIME = time.time()
 
 # CORS middleware
 app.add_middleware(
@@ -350,3 +354,20 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
 @app.get("/")
 async def root():
     return {"message": "MeetMate Backend API", "status": "running"}
+
+
+@app.get("/health")
+async def health():
+    """Lightweight health check for load balancers / orchestrators."""
+    uptime = int(time.time() - START_TIME)
+
+    # Basic dependency sanity checks
+    openai_ok = bool(os.getenv("OPENAI_API_KEY"))
+    supabase_ok = bool(SUPABASE_URL and SUPABASE_ANON_KEY)
+
+    return {
+        "status": "ok",
+        "uptime_seconds": uptime,
+        "openai_api_key_present": openai_ok,
+        "supabase_configured": supabase_ok,
+    }

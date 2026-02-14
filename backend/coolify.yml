@@ -1,0 +1,22 @@
+# Example Coolify app configuration (informational)
+# When creating a new app in Coolify, choose 'Dockerfile' build method and
+# point to this repository's backend/ folder. Set required env vars in the
+# Coolify UI or use the .env file below.
+
+name: meetmate-backend
+build:
+  context: .
+  dockerfile: Dockerfile
+run:
+  command: uvicorn main:app --host 0.0.0.0 --port 8000
+  port: 8000
+  env_file: .env
+  envs:
+    - OPENAI_API_KEY: ""
+    - SUPABASE_URL: ""
+    - SUPABASE_ANON_KEY: ""
+    - DATABASE_URL: ""
+
+# Note: This file is a simple helper for documentation. Coolify's web UI
+# will let you configure build args, environment variables, health checks,
+# and ports. Use the Dockerfile above to build the container in Coolify.
