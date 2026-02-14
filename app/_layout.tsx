@@ -2,10 +2,14 @@ import { ToastProvider } from "@/components/ui/toast";
 import useAppDefault from "@/hooks/store/useAppDefault";
 import AuthProvider, { useAuthContext } from "@/hooks/useAuthContext";
 import { ThemeProvider } from "@/theme/theme-provider";
+import {
+  handleLastNotificationResponse,
+  handleNotificationResponse,
+} from "@/utils/deeplink";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { router, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Platform } from "react-native";
@@ -86,13 +90,7 @@ function RootNavigation() {
       .catch((error: any) => console.error("Push registration error:", error));
 
     // Handle notification tap when app was killed
-    const lastResponse = Notifications.getLastNotificationResponse();
-    if (lastResponse) {
-      const data = lastResponse.notification.request.content.data;
-      if (data?.meeting_id) {
-        router.push(`/meeting/${data.meeting_id}`);
-      }
-    }
+    handleLastNotificationResponse();
 
     const notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
@@ -103,10 +101,7 @@ function RootNavigation() {
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("Notification tapped:", response);
-        const data = response.notification.request.content.data;
-        if (data?.meeting_id) {
-          router.push(`/meeting/${data.meeting_id}`);
-        }
+        handleNotificationResponse(response);
       });
 
     return () => {

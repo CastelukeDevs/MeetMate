@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { useToast } from "@/components/ui/toast";
 import { View } from "@/components/ui/view";
+import { triggerTestNotification } from "@/utils/deeplink";
 import { createNewMeeting } from "@/utils/meetingManager";
 import { processMeetingTranscript } from "@/utils/processTranscript";
 import { formatTime } from "@/utils/time";
@@ -15,6 +16,9 @@ import {
 } from "@/utils/uploadAudio";
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
+
+// Test meeting ID for notification testing
+const TEST_MEETING_ID = "25";
 
 function Index() {
   const saveSheet = useBottomSheet();
@@ -89,6 +93,7 @@ function Index() {
   };
 
   return (
+    <>
     <View style={styles.container}>
       <View style={styles.recorderWrapper}>
         <AudioRecorder
@@ -129,6 +134,20 @@ function Index() {
         </View>
       </BottomSheet>
     </View>
+
+    {/* Test notification button - remove in production */}
+    {__DEV__ && (
+      <View style={styles.testButtonContainer}>
+        <Button
+          variant="outline"
+          size="sm"
+          onPress={() => triggerTestNotification(TEST_MEETING_ID)}
+        >
+          Test Notification
+        </Button>
+      </View>
+    )}
+    </>
   );
 }
 
@@ -151,5 +170,10 @@ const styles = StyleSheet.create({
   },
   sheetContent: {
     gap: 8,
+  },
+  testButtonContainer: {
+    position: "absolute",
+    bottom: 100,
+    right: 16,
   },
 });
