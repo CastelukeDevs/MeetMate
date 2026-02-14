@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { useToast } from "@/components/ui/toast";
 import { View } from "@/components/ui/view";
-import { triggerTestNotification } from "@/utils/deeplink";
 import { createNewMeeting } from "@/utils/meetingManager";
 import { processMeetingTranscript } from "@/utils/processTranscript";
 import { formatTime } from "@/utils/time";
@@ -90,75 +89,46 @@ function Index() {
   };
 
   return (
-    <>
-      <View style={styles.container}>
-        <View style={styles.recorderWrapper}>
-          <AudioRecorder
-            sessionId={recordingSession}
-            quality="high"
-            showWaveform={true}
-            showTimer={true}
-            maxDuration={1 * 60 * 60} // 1 hour
-            onSaveRecording={handleSaveRecording}
-          />
+    <View style={styles.container}>
+      <View style={styles.recorderWrapper}>
+        <AudioRecorder
+          sessionId={recordingSession}
+          quality="high"
+          showWaveform={true}
+          showTimer={true}
+          maxDuration={1 * 60 * 60} // 1 hour
+          onSaveRecording={handleSaveRecording}
+        />
 
-          {uploading && (
-            <View style={styles.uploadingContainer}>
-              <ActivityIndicator size="small" />
-              <Text variant="caption" style={styles.uploadingText}>
-                Uploading... {uploadProgress}%
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <BottomSheet
-          isVisible={saveSheet.isVisible}
-          onClose={handleSheetClosed}
-          title="Save your meeting recording"
-        >
-          <View style={styles.sheetContent}>
-            <Input
-              label="Meeting Name"
-              placeholder="Enter meeting name"
-              value={defaultMeetingName}
-              onChangeText={setDefaultMeetingName}
-              variant="outline"
-            />
-            <Button variant="success" onPress={handleRecordingComplete}>
-              Save
-            </Button>
+        {uploading && (
+          <View style={styles.uploadingContainer}>
+            <ActivityIndicator size="small" />
+            <Text variant="caption" style={styles.uploadingText}>
+              Uploading... {uploadProgress}%
+            </Text>
           </View>
-        </BottomSheet>
+        )}
       </View>
 
-      {/* Test notification button - remove in production */}
-      {__DEV__ && (
-        <View style={styles.testButtonContainer}>
-          <Button
+      <BottomSheet
+        isVisible={saveSheet.isVisible}
+        onClose={handleSheetClosed}
+        title="Save your meeting recording"
+      >
+        <View style={styles.sheetContent}>
+          <Input
+            label="Meeting Name"
+            placeholder="Enter meeting name"
+            value={defaultMeetingName}
+            onChangeText={setDefaultMeetingName}
             variant="outline"
-            size="sm"
-            onPress={async () => {
-              try {
-                await triggerTestNotification(TEST_MEETING_ID);
-              } catch (error) {
-                const message =
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to send test notification";
-                toast({
-                  title: "Error",
-                  description: message,
-                  variant: "error",
-                });
-              }
-            }}
-          >
-            Test Notification
+          />
+          <Button variant="success" onPress={handleRecordingComplete}>
+            Save
           </Button>
         </View>
-      )}
-    </>
+      </BottomSheet>
+    </View>
   );
 }
 
@@ -171,6 +141,7 @@ const styles = StyleSheet.create({
   },
   recorderWrapper: {
     width: "100%",
+    paddingHorizontal: 16,
   },
   uploadingContainer: {
     marginTop: 16,
