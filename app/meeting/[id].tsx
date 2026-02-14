@@ -49,7 +49,8 @@ export default function MeetingScreen() {
     };
 
     fetchMeetingDetail();
-  }, [id, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleRetry = async () => {
     if (!id || retrying) return;

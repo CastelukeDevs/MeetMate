@@ -34,7 +34,8 @@ const MeetingsScreen = () => {
         variant: "error",
       });
     }
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);

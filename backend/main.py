@@ -1,18 +1,58 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI
 import httpx
 import os
 import tempfile
+import logging
 from typing import Optional, Any, List
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 app = FastAPI(title="MeetMate Backend")
 
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure specific origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+# Connection pool for Supabase requests
+http_client: Optional[httpx.Client] = None
+
+
+def get_http_client() -> httpx.Client:
+    """Get or create HTTP client with connection pooling"""
+    global http_client
+    if http_client is None:
+        http_client = httpx.Client(timeout=30)
+    return http_client
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up HTTP client on shutdown"""
+    global http_client
+    if http_client:
+        http_client.close()
+        http_client = None
 
 
 class SupabaseSession(BaseModel):
@@ -86,6 +126,7 @@ def generate_summary(transcript_segments: List[dict]) -> dict:
     """
     Generate summaries of the meeting from transcript segments using GPT.
     Returns dict with 'text' (full summary) and 'short' (250 char max) keys.
+    Uses parallel execution for both summaries.
     """
     client = get_openai_client()
     
@@ -95,45 +136,53 @@ def generate_summary(transcript_segments: List[dict]) -> dict:
     if not full_transcript.strip():
         return {"text": "No content to summarize.", "short": "No content."}
     
-    # Generate full summary
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that summarizes meeting transcripts. Provide a clear, concise summary of the key points, decisions, and action items discussed in the meeting."
-            },
-            {
-                "role": "user",
-                "content": f"Please summarize this meeting transcript:\n\n{full_transcript}"
-            }
-        ],
-        max_tokens=500
-    )
-    text_summary = response.choices[0].message.content.strip()
+    def generate_full_summary():
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that summarizes meeting transcripts. Provide a clear, concise summary of the key points, decisions, and action items discussed in the meeting."
+                },
+                {
+                    "role": "user",
+                    "content": f"Please summarize this meeting transcript:\n\n{full_transcript}"
+                }
+            ],
+            max_tokens=500
+        )
+        return response.choices[0].message.content.strip()
     
-    # Generate short summary (250 char max)
-    short_response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful assistant. Provide an extremely brief summary in 250 characters or less. Be direct and concise."
-            },
-            {
-                "role": "user",
-                "content": f"Summarize this meeting in 250 characters or less:\n\n{full_transcript}"
-            }
-        ],
-        max_tokens=100
-    )
-    short_summary = short_response.choices[0].message.content.strip()[:250]
+    def generate_short_summary():
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant. Provide an extremely brief summary in 250 characters or less. Be direct and concise."
+                },
+                {
+                    "role": "user",
+                    "content": f"Summarize this meeting in 250 characters or less:\n\n{full_transcript}"
+                }
+            ],
+            max_tokens=100
+        )
+        return response.choices[0].message.content.strip()[:250]
+    
+    # Execute both summaries in parallel
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        full_future = executor.submit(generate_full_summary)
+        short_future = executor.submit(generate_short_summary)
+        
+        text_summary = full_future.result()
+        short_summary = short_future.result()
     
     return {"text": text_summary, "short": short_summary}
 
 
 def supabase_request(method: str, endpoint: str, access_token: str, data: dict = None) -> dict:
-    """Make authenticated request to Supabase REST API"""
+    """Make authenticated request to Supabase REST API using connection pool"""
     url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
     headers = {
         "apikey": SUPABASE_ANON_KEY,
@@ -142,18 +191,18 @@ def supabase_request(method: str, endpoint: str, access_token: str, data: dict =
         "Prefer": "return=representation"
     }
     
-    with httpx.Client() as client:
-        if method == "GET":
-            response = client.get(url, headers=headers)
-        elif method == "PATCH":
-            response = client.patch(url, headers=headers, json=data)
-        else:
-            response = client.request(method, url, headers=headers, json=data)
-        
-        if response.status_code >= 400:
-            raise Exception(f"Supabase error: {response.status_code} - {response.text}")
-        
-        return response.json() if response.text else {}
+    client = get_http_client()
+    if method == "GET":
+        response = client.get(url, headers=headers)
+    elif method == "PATCH":
+        response = client.patch(url, headers=headers, json=data)
+    else:
+        response = client.request(method, url, headers=headers, json=data)
+    
+    if response.status_code >= 400:
+        raise Exception(f"Supabase error: {response.status_code} - {response.text}")
+    
+    return response.json() if response.text else {}
 
 
 def process_meeting_background(
@@ -180,7 +229,7 @@ def process_meeting_background(
             access_token
         )
         device_token = profiles[0].get("device_token") if profiles else None
-        print(f"Device token: {device_token}")
+        logger.info(f"Device token found: {bool(device_token)}")
         
         # Convert public URL to authenticated URL if needed
         # Public: /storage/v1/object/public/bucket/path
@@ -193,26 +242,26 @@ def process_meeting_background(
             "Authorization": f"Bearer {access_token}"
         }
         
-        print(f"Downloading from: {download_url}")
+        logger.info(f"Downloading audio from: {download_url}")
         
         with httpx.Client(timeout=300) as client:
             audio_response = client.get(download_url, headers=headers)
             if audio_response.status_code != 200:
-                print(f"Failed to download audio: {audio_response.status_code} - {audio_response.text}")
+                logger.error(f"Failed to download audio: {audio_response.status_code} - {audio_response.text}")
                 return
             audio_content = audio_response.content
         
-        print(f"Downloaded audio: {len(audio_content)} bytes")
+        logger.info(f"Downloaded audio: {len(audio_content)} bytes")
         
         # Transcribe
         transcript_json = transcribe_audio_sync(audio_content)
         
-        print(f"Transcription complete: {len(transcript_json)} segments")
+        logger.info(f"Transcription complete: {len(transcript_json)} segments")
         
         # Generate summaries (text and short)
         summary_json = generate_summary(transcript_json)
         
-        print(f"Summary generated: {len(summary_json['text'])} chars (text), {len(summary_json['short'])} chars (short)")
+        logger.info(f"Summary generated: {len(summary_json['text'])} chars (text), {len(summary_json['short'])} chars (short)")
         
         # Save to Supabase via REST API
         supabase_request(
@@ -241,16 +290,16 @@ def process_meeting_background(
                         },
                         headers={"Content-Type": "application/json"}
                     )
-                    print(f"Push notification sent: {push_response.status_code}")
+                    logger.info(f"Push notification sent: {push_response.status_code}")
             except Exception as push_error:
-                print(f"Failed to send push notification: {push_error}")
+                logger.error(f"Failed to send push notification: {push_error}")
         else:
-            print(f"No device token found for user {user_id}")
+            logger.warning(f"No device token found for user {user_id}")
         
-        print(f"Transcription completed for meeting {meeting_id}")
+        logger.info(f"Transcription completed for meeting {meeting_id}")
         
     except Exception as e:
-        print(f"Background processing failed: {e}")
+        logger.error(f"Background processing failed: {e}", exc_info=True)
 
 
 @app.post("/process-meeting", response_model=ProcessMeetingResponse)

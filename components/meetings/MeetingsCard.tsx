@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { useColor } from "@/hooks/useColor";
 import { Meetings } from "@/types/meeting.types";
 import { formatTime, getTimeAgo } from "@/utils/time";
 import { Podcast } from "lucide-react-native";
@@ -21,13 +22,14 @@ interface MeetingsCardProps {
 export const MeetingsCard = ({ data, onPress }: MeetingsCardProps) => {
   const timeAgo = getTimeAgo(data.created_at);
   const date = formatTime(data.created_at, "shortDateTime");
+  const colors = useColor("blue");
 
   return (
     <TouchableOpacity onPress={onPress}>
       <Card>
         <CardHeader>
           <View style={styles.cardHeaderRow}>
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, { backgroundColor: colors }]}>
               <Icon name={Podcast} color="white" size={20} />
             </View>
             <View style={styles.cardTitleContainer}>
@@ -75,7 +77,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#3b82f6",
     alignItems: "center",
     justifyContent: "center",
   },
