@@ -31,7 +31,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/images/adaptive-icon.png",
     },
     edgeToEdgeEnabled: true,
-    permissions: ["RECORD_AUDIO", "FOREGROUND_SERVICE"],
+    permissions: [
+      "RECORD_AUDIO",
+      "FOREGROUND_SERVICE",
+      "FOREGROUND_SERVICE_MICROPHONE",
+    ],
     googleServicesFile: "./google-services.json",
   },
   web: {
@@ -62,6 +66,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "Allow $(PRODUCT_NAME) to access your microphone to record your meetings.",
       },
     ],
+    "./plugins/withAudioForegroundService",
   ],
   experiments: {
     typedRoutes: true,

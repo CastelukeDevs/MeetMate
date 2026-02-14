@@ -36,6 +36,13 @@ async function registerForPushNotificationsAsync() {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#FF231F7C",
     });
+
+    await Notifications.setNotificationChannelAsync("audio-recording", {
+      name: "Audio Recording",
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: "default",
+      vibrationPattern: [0, 250, 250, 250],
+    });
   }
 
   if (Device.isDevice) {
