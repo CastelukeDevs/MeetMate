@@ -1,16 +1,16 @@
+import { MeetingHeader } from "@/components/meetings/MeetingHeader";
+import { SummaryCard } from "@/components/meetings/SummaryCard";
+import { TranscriptCard } from "@/components/meetings/TranscriptCard";
 import { AudioPlayer } from "@/components/ui/audio-player";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useToast } from "@/components/ui/toast";
 import { Meetings } from "@/types/meeting.types";
 import { getMeetingById } from "@/utils/meetingManager";
-import { formatTime, getTimeAgo } from "@/utils/time";
 import { getSignedUrl } from "@/utils/uploadAudio";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Podcast } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,17 +21,6 @@ export default function MeetingScreen() {
 
   const [meetings, setMeetings] = useState<Meetings>();
   const [audioUrl, setAudioUrl] = useState<string>();
-
-  const timeAgo = useMemo(
-    () => (!meetings ? "" : getTimeAgo(meetings.created_at)),
-    [meetings],
-  );
-
-  const date = useMemo(() => {
-    if (!meetings) return "";
-    const date = formatTime(meetings.created_at, "shortDateTime");
-    return date;
-  }, [meetings]);
 
   useEffect(() => {
     const fetchMeetingDetail = async () => {
@@ -84,67 +73,11 @@ export default function MeetingScreen() {
         autoPlay={false}
       />
 
-      <View style={styles.headerRow}>
-        <View style={styles.iconContainer}>
-          <Icon name={Podcast} color="white" size={20} />
-        </View>
-        <View style={styles.titleContainer}>
-          <Text variant="title" numberOfLines={1}>
-            {meetings?.name}
-          </Text>
-          <Text variant="caption">
-            {date} - {timeAgo}
-          </Text>
-        </View>
-      </View>
+      <MeetingHeader name={meetings?.name} createdAt={meetings?.created_at} />
 
-      {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {meetings?.summary?.text ? (
-            <Text>{meetings.summary.text}</Text>
-          ) : (
-            <View style={styles.skeletonGap}>
-              <Skeleton width="100%" height={16} variant="rounded" />
-              <Skeleton width="100%" height={16} variant="rounded" />
-              <Skeleton width="80%" height={16} variant="rounded" />
-            </View>
-          )}
-        </CardContent>
-      </Card>
+      <SummaryCard summary={meetings?.summary?.text} />
 
-      {/* Transcript Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Transcript</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {meetings?.annotation && meetings.annotation.length > 0 ? (
-            <View style={styles.skeletonGap}>
-              {meetings.annotation.map((segment, index) => (
-                <View key={index} style={styles.segmentGap}>
-                  <Text variant="caption" style={styles.timestampText}>
-                    {formatTime(segment.start)} - {formatTime(segment.end)}
-                  </Text>
-                  <Text>{segment.text}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.skeletonGapLarge}>
-              {[1, 2, 3].map((i) => (
-                <View key={i} style={styles.segmentGap}>
-                  <Skeleton width={80} height={12} variant="rounded" />
-                  <Skeleton width="100%" height={16} variant="rounded" />
-                </View>
-              ))}
-            </View>
-          )}
-        </CardContent>
-      </Card>
+      <TranscriptCard segments={meetings?.annotation} />
     </ScrollView>
   );
 }
@@ -166,34 +99,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#3b82f6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleContainer: {
-    flex: 1,
-    gap: 8,
-  },
-  skeletonGap: {
-    gap: 8,
-  },
-  skeletonGapLarge: {
-    gap: 12,
-  },
-  segmentGap: {
-    gap: 4,
-  },
-  timestampText: {
-    opacity: 0.6,
   },
 });

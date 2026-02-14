@@ -4,82 +4,45 @@ import useAppDefault from "@/hooks/store/useAppDefault";
 import { router } from "expo-router";
 import { useEffect } from "react";
 
-const OnboardingPresets = {
-  welcome: [
-    {
-      id: "welcome",
-      title: "Welcome to Our App",
-      description:
-        "Discover amazing features and get started with your journey.",
-      icon: <Text style={{ fontSize: 80 }}>👋</Text>,
-    },
-    {
-      id: "features",
-      title: "Powerful Features",
-      description:
-        "Experience cutting-edge functionality designed to make your life easier.",
-      icon: <Text style={{ fontSize: 80 }}>⚡</Text>,
-    },
-    {
-      id: "personalize",
-      title: "Personalize Your Experience",
-      description: "Customize the app to match your preferences and workflow.",
-      icon: <Text style={{ fontSize: 80 }}>🎨</Text>,
-    },
-    {
-      id: "ready",
-      title: "You're All Set!",
-      description:
-        "Everything is ready. Let's start exploring what you can achieve.",
-      icon: <Text style={{ fontSize: 80 }}>🚀</Text>,
-    },
-  ],
+const onboardingSteps = [
+  {
+    id: "welcome",
+    title: "Welcome to MeetMate",
+    description:
+      "Your AI-powered meeting companion. Record, transcribe, and summarize your meetings effortlessly.",
+    icon: <Text style={{ fontSize: 80 }}>🎙️</Text>,
+  },
+  {
+    id: "record",
+    title: "Record Your Meetings",
+    description:
+      "Capture every detail with high-quality audio recording. Just tap and start.",
+    icon: <Text style={{ fontSize: 80 }}>🔴</Text>,
+  },
+  {
+    id: "transcribe",
+    title: "AI Transcription",
+    description:
+      "Get accurate transcriptions powered by AI. Every word captured with timestamps.",
+    icon: <Text style={{ fontSize: 80 }}>📝</Text>,
+  },
+  {
+    id: "summarize",
+    title: "Smart Summaries",
+    description:
+      "Save time with AI-generated summaries. Get the key points without reading everything.",
+    icon: <Text style={{ fontSize: 80 }}>✨</Text>,
+  },
+  {
+    id: "ready",
+    title: "You're All Set!",
+    description:
+      "Start recording your first meeting and let MeetMate handle the rest.",
+    icon: <Text style={{ fontSize: 80 }}>🚀</Text>,
+  },
+];
 
-  features: [
-    {
-      id: "organize",
-      title: "Stay Organized",
-      description: "Keep all your important information in one secure place.",
-      icon: <Text style={{ fontSize: 80 }}>📋</Text>,
-    },
-    {
-      id: "collaborate",
-      title: "Collaborate Seamlessly",
-      description: "Work together with your team in real-time, anywhere.",
-      icon: <Text style={{ fontSize: 80 }}>🤝</Text>,
-    },
-    {
-      id: "automate",
-      title: "Automate Your Workflow",
-      description: "Set up smart automations to save time and reduce errors.",
-      icon: <Text style={{ fontSize: 80 }}>🤖</Text>,
-    },
-  ],
-
-  security: [
-    {
-      id: "secure",
-      title: "Your Data is Secure",
-      description:
-        "We use end-to-end encryption to keep your information safe.",
-      icon: <Text style={{ fontSize: 80 }}>🔒</Text>,
-    },
-    {
-      id: "privacy",
-      title: "Privacy First",
-      description: "We never share your personal data with third parties.",
-      icon: <Text style={{ fontSize: 80 }}>🛡️</Text>,
-    },
-    {
-      id: "control",
-      title: "You're in Control",
-      description: "Manage your privacy settings and data preferences anytime.",
-      icon: <Text style={{ fontSize: 80 }}>⚙️</Text>,
-    },
-  ],
-};
-
-function OnboardingDemo() {
+function OnboardingScreen() {
   const { hasCompletedOnboarding, completeOnboarding, skipOnboarding } =
     useOnboarding();
 
@@ -94,7 +57,7 @@ function OnboardingDemo() {
 
   return (
     <Onboarding
-      steps={OnboardingPresets.welcome}
+      steps={onboardingSteps}
       onComplete={completeOnboarding}
       onSkip={skipOnboarding}
       showSkip={true}
@@ -108,4 +71,4 @@ function OnboardingDemo() {
   );
 }
 
-export default OnboardingDemo;
+export default OnboardingScreen;
