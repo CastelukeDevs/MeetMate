@@ -28,6 +28,7 @@ This folder documents key architectural decisions and future development conside
 - **Realtime transcription:** Explore generating transcripts as recording progresses, so users can see live speech-to-text.
 - **Meeting tagging & search:** Add tagging, search, sort, and filter features to help users find past meeting recordings easily.
 - **Download options:** Allow users to download recordings, transcripts, and summaries as files.
+- **Spotify-like transcription:** Implement interactive transcription where users can tap on a transcript line to play the audio from that exact moment, similar to Spotify lyrics. While audio is playing, animate and highlight the currently spoken transcript line in real time.
 
 ---
 
