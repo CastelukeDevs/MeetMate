@@ -29,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     edgeToEdgeEnabled: true,
     permissions: ["RECORD_AUDIO", "FOREGROUND_SERVICE"],
+    googleServicesFile: "./google-services.json",
   },
   web: {
     output: "static",

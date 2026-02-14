@@ -1,3 +1,5 @@
+import { Profile } from "@/types/profile.types";
+import { getProfileById, updateDeviceToken } from "@/utils/profileManager";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
 import {
@@ -7,10 +9,11 @@ import {
   useEffect,
   useState,
 } from "react";
+import useAppDefault from "./store/useAppDefault";
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | undefined | null>();
-  const [profile, setProfile] = useState<any>();
+  const [profile, setProfile] = useState<Profile | null>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Fetch the session once, and subscribe to auth state changes
@@ -46,28 +49,40 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  const notificationToken = useAppDefault((state) => state.notificationToken);
+
+  console.log("notificationToken in useAuthContext:", notificationToken);
+
   // Fetch the profile when the session changes
   useEffect(() => {
     const fetchProfile = async () => {
-      setIsLoading(true);
-
       if (session) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        setProfile(data);
+        setIsLoading(true);
+        try {
+          const data = await getProfileById(session.user.id);
+          setProfile(data);
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+          setProfile(null);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         setProfile(null);
       }
-
-      setIsLoading(false);
     };
 
     fetchProfile();
   }, [session]);
+
+  // Update device token when session or token changes
+  useEffect(() => {
+    if (session && notificationToken) {
+      updateDeviceToken(notificationToken).catch((error) => {
+        console.error("Error updating device token:", error);
+      });
+    }
+  }, [session, notificationToken]);
 
   return (
     <AuthContext.Provider
@@ -75,7 +90,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         session,
         isLoading,
         profile,
-        isLoggedIn: session != undefined,
+        isLoggedIn: session !== undefined && session !== null,
       }}
     >
       {children}
@@ -85,7 +100,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
 export type AuthData = {
   session?: Session | null;
-  profile?: any | null;
+  profile?: Profile | null;
   isLoading: boolean;
   isLoggedIn: boolean;
 };

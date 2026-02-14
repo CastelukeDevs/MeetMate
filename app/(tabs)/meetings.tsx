@@ -1,25 +1,19 @@
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Icon } from "@/components/ui/icon";
-import { Text } from "@/components/ui/text";
+import { EmptyMeetings } from "@/components/meetings/EmptyMeetings";
+import { MeetingsCard } from "@/components/meetings/MeetingsCard";
+import { useToast } from "@/components/ui/toast";
 import { Meetings } from "@/types/meeting.types";
 import { getMeetings } from "@/utils/meetingManager";
-import { getTimeAgo } from "@/utils/time";
-import { router } from "expo-router";
-import { Podcast } from "lucide-react-native";
+import { router, useFocusEffect } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MeetingsScreen = () => {
   const { top, bottom } = useSafeAreaInsets();
+  const { toast } = useToast();
+
   const [meetingList, setMeetingList] = useState<Meetings[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const goToMeetingsDetail = (id: string) => {
     router.push(`/meeting/${id}`);
@@ -32,7 +26,21 @@ const MeetingsScreen = () => {
         setMeetingList(meetings);
         console.log("current meetings", meetings);
       }
-    } catch (error) {}
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch meetings";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "error",
+      });
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchMeetingList();
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -40,8 +48,14 @@ const MeetingsScreen = () => {
     return () => {};
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMeetingList();
+    }, []),
+  );
+
   return (
-    <View style={{ flex: 1, justifyContent: "center" }}>
+    <View style={styles.container}>
       <FlatList
         data={meetingList}
         keyExtractor={(data) => data.id}
@@ -51,65 +65,32 @@ const MeetingsScreen = () => {
             onPress={() => goToMeetingsDetail(item.id)}
           />
         )}
-        contentContainerStyle={{
-          gap: 12,
-          marginBottom: bottom,
-          paddingHorizontal: 8,
-          paddingTop: top,
-        }}
+        ListEmptyComponent={<EmptyMeetings />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            progressViewOffset={top}
+          />
+        }
+        contentContainerStyle={[
+          styles.listContent,
+          { marginBottom: bottom, paddingTop: top },
+        ]}
       />
-      {/* <MeetingsCard data={meetingsData} /> */}
     </View>
   );
 };
 
 export default MeetingsScreen;
 
-const MeetingsCard = ({
-  data,
-  onPress,
-}: {
-  data: Meetings;
-  onPress: () => void;
-}) => {
-  const timeAgo = getTimeAgo(data.created_at);
-
-  return (
-    <TouchableOpacity onPress={onPress}>
-      <Card>
-        <CardHeader>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#3b82f6",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon name={Podcast} color="white" size={20} />
-            </View>
-            <View style={{ flex: 1, gap: 8 }}>
-              <CardTitle>{data.name}</CardTitle>
-              <CardDescription>{timeAgo}</CardDescription>
-            </View>
-          </View>
-        </CardHeader>
-        <CardContent>
-          <View style={{ gap: 8 }}>
-            <View style={{ flexDirection: "row" }}>
-              <Badge variant={data.inProgress ? "outline" : "success"}>
-                {data.inProgress ? "Processing" : "Completed"}
-              </Badge>
-            </View>
-            {data.summary && <Text>{data.summary.text}</Text>}
-          </View>
-        </CardContent>
-      </Card>
-    </TouchableOpacity>
-  );
-};
-
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  listContent: {
+    gap: 12,
+    paddingHorizontal: 8,
+  },
+});

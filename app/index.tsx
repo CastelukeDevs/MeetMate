@@ -2,7 +2,7 @@ import useAppDefault from "@/hooks/store/useAppDefault";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { router, SplashScreen } from "expo-router";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,13 +26,13 @@ export default function Index() {
     }
   }, [isLoading, isFirstTime, isLoggedIn]);
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    ></View>
-  );
+  return <View style={styles.container} />;
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

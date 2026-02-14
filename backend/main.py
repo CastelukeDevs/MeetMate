@@ -82,9 +82,10 @@ def transcribe_audio_sync(audio_content: bytes) -> List[dict]:
         os.unlink(tmp_file_path)
 
 
-def generate_summary(transcript_segments: List[dict]) -> str:
+def generate_summary(transcript_segments: List[dict]) -> dict:
     """
-    Generate a summary of the meeting from transcript segments using GPT
+    Generate summaries of the meeting from transcript segments using GPT.
+    Returns dict with 'text' (full summary) and 'short' (250 char max) keys.
     """
     client = get_openai_client()
     
@@ -92,8 +93,9 @@ def generate_summary(transcript_segments: List[dict]) -> str:
     full_transcript = "\n".join([seg["text"] for seg in transcript_segments])
     
     if not full_transcript.strip():
-        return "No content to summarize."
+        return {"text": "No content to summarize.", "short": "No content."}
     
+    # Generate full summary
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -108,8 +110,26 @@ def generate_summary(transcript_segments: List[dict]) -> str:
         ],
         max_tokens=500
     )
+    text_summary = response.choices[0].message.content.strip()
     
-    return response.choices[0].message.content.strip()
+    # Generate short summary (250 char max)
+    short_response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant. Provide an extremely brief summary in 250 characters or less. Be direct and concise."
+            },
+            {
+                "role": "user",
+                "content": f"Summarize this meeting in 250 characters or less:\n\n{full_transcript}"
+            }
+        ],
+        max_tokens=100
+    )
+    short_summary = short_response.choices[0].message.content.strip()[:250]
+    
+    return {"text": text_summary, "short": short_summary}
 
 
 def supabase_request(method: str, endpoint: str, access_token: str, data: dict = None) -> dict:
@@ -139,10 +159,20 @@ def supabase_request(method: str, endpoint: str, access_token: str, data: dict =
 def process_meeting_background(
     audio_url: str,
     meeting_id: str,
+    user_id: str,
     access_token: str
 ):
     """Background task to process meeting transcription"""
     try:
+        # Get user profile for device token
+        profiles = supabase_request(
+            "GET",
+            f"profiles?id=eq.{user_id}&select=device_token",
+            access_token
+        )
+        device_token = profiles[0].get("device_token") if profiles else None
+        print(f"Device token: {device_token}")
+        
         # Convert public URL to authenticated URL if needed
         # Public: /storage/v1/object/public/bucket/path
         # Authenticated: /storage/v1/object/bucket/path
@@ -170,11 +200,10 @@ def process_meeting_background(
         
         print(f"Transcription complete: {len(transcript_json)} segments")
         
-        # Generate summary
-        summary_text = generate_summary(transcript_json)
-        summary_json = {"text": summary_text}
+        # Generate summaries (text and short)
+        summary_json = generate_summary(transcript_json)
         
-        print(f"Summary generated: {len(summary_text)} characters")
+        print(f"Summary generated: {len(summary_json['text'])} chars (text), {len(summary_json['short'])} chars (short)")
         
         # Save to Supabase via REST API
         supabase_request(
@@ -188,7 +217,27 @@ def process_meeting_background(
             }
         )
         
-        # TODO: Send push notification to user
+        # Send push notification to user
+        if device_token:
+            try:
+                with httpx.Client() as push_client:
+                    push_response = push_client.post(
+                        "https://exp.host/--/api/v2/push/send",
+                        json={
+                            "to": device_token,
+                            "title": "Transcription Complete",
+                            "body": "Your meeting has been transcribed and summarized.",
+                            "data": {"meeting_id": meeting_id},
+                            "sound": "default"
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    print(f"Push notification sent: {push_response.status_code}")
+            except Exception as push_error:
+                print(f"Failed to send push notification: {push_error}")
+        else:
+            print(f"No device token found for user {user_id}")
+        
         print(f"Transcription completed for meeting {meeting_id}")
         
     except Exception as e:
@@ -202,10 +251,10 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
     Returns immediately, processes in background
     """
     try:
-        # Verify session is valid by checking meeting exists
+        # Verify session is valid by checking meeting exists and get user id
         meetings = supabase_request(
             "GET",
-            f"meetings?id=eq.{request.meeting_id}&select=id",
+            f"meetings?id=eq.{request.meeting_id}&select=id,users",
             request.session.access_token
         )
         
@@ -215,11 +264,14 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
                 message=f"Meeting not found: {request.meeting_id}"
             )
         
+        user_id = meetings[0].get("users")
+        
         # Add background task
         background_tasks.add_task(
             process_meeting_background,
             request.audio_url,
             request.meeting_id,
+            user_id,
             request.session.access_token
         )
         

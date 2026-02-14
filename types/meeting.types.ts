@@ -1,9 +1,15 @@
+export type TranscriptSegment = {
+  text: string;
+  start: number;
+  end: number;
+};
+
 export type Meetings = {
   id: string;
   created_at: string;
   users: string;
   name: string;
-  annotation?: any;
+  annotation?: TranscriptSegment[];
   summary?: Summary;
   inProgress: boolean;
   recording: string;
@@ -11,4 +17,5 @@ export type Meetings = {
 
 export type Summary = {
   text: string;
+  short: string;
 };

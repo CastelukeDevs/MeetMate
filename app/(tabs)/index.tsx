@@ -3,24 +3,27 @@ import { BottomSheet, useBottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { useToast } from "@/components/ui/toast";
 import { View } from "@/components/ui/view";
 import { createNewMeeting } from "@/utils/meetingManager";
 import { processMeetingTranscript } from "@/utils/processTranscript";
+import { formatTime } from "@/utils/time";
 import {
   getAudioFileInfo,
   uploadAudioToSupabase,
   type UploadProgress,
 } from "@/utils/uploadAudio";
 import React, { useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
 
 function Index() {
   const saveSheet = useBottomSheet();
+  const { toast } = useToast();
 
   const [recordingSession, setRecordingSession] = useState<number>(Date.now());
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [defaultFileName, setDefaultFileName] = useState("");
+  const [defaultMeetingName, setDefaultMeetingName] = useState("");
   const [recordingUri, setRecordingUri] = useState<string | undefined>();
 
   const handleRecordingComplete = async () => {
@@ -52,14 +55,21 @@ function Index() {
 
       const saveResult = await createNewMeeting(
         result.url,
-        defaultFileName || `Meeting_${new Date().toISOString()}`,
+        defaultMeetingName || `Meeting_${new Date().toISOString()}`,
       );
 
       await processMeetingTranscript(saveResult.id, saveResult.recording);
       console.log("Meeting transcript processing started");
       setRecordingSession(Date.now());
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to upload recording";
       console.error("Failed to upload recording:", error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "error",
+      });
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -68,7 +78,9 @@ function Index() {
 
   const handleSaveRecording = (uri: string) => {
     saveSheet.open();
-    setDefaultFileName(`Meeting_${new Date().toISOString()}`);
+    setDefaultMeetingName(
+      `Meeting - ${formatTime(new Date().toISOString(), "shortDateTime")}`,
+    );
     setRecordingUri(uri);
   };
 
@@ -77,24 +89,21 @@ function Index() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center" }}>
-      <View style={{ width: "100%" }}>
+    <View style={styles.container}>
+      <View style={styles.recorderWrapper}>
         <AudioRecorder
           sessionId={recordingSession}
           quality="high"
           showWaveform={true}
           showTimer={true}
           maxDuration={1 * 60 * 60} // 1 hour
-          // onRecordingComplete={handleRecordingComplete}
-          // onSaveRecording={handleRecordingComplete}
-
           onSaveRecording={handleSaveRecording}
         />
 
         {uploading && (
-          <View style={{ marginTop: 16, alignItems: "center" }}>
+          <View style={styles.uploadingContainer}>
             <ActivityIndicator size="small" />
-            <Text variant="caption" style={{ marginTop: 8 }}>
+            <Text variant="caption" style={styles.uploadingText}>
               Uploading... {uploadProgress}%
             </Text>
           </View>
@@ -106,12 +115,12 @@ function Index() {
         onClose={handleSheetClosed}
         title="Save your meeting recording"
       >
-        <View style={{ gap: 8 }}>
+        <View style={styles.sheetContent}>
           <Input
             label="Meeting Name"
             placeholder="Enter meeting name"
-            value={defaultFileName}
-            onChangeText={setDefaultFileName}
+            value={defaultMeetingName}
+            onChangeText={setDefaultMeetingName}
             variant="outline"
           />
           <Button variant="success" onPress={handleRecordingComplete}>
@@ -124,3 +133,23 @@ function Index() {
 }
 
 export default Index;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  recorderWrapper: {
+    width: "100%",
+  },
+  uploadingContainer: {
+    marginTop: 16,
+    alignItems: "center",
+  },
+  uploadingText: {
+    marginTop: 8,
+  },
+  sheetContent: {
+    gap: 8,
+  },
+});

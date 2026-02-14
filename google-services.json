@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "189431271501",
+    "project_id": "meetmate-c63ce",
+    "storage_bucket": "meetmate-c63ce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:189431271501:android:82e5a2c6e317484c408c04",
+        "android_client_info": {
+          "package_name": "com.casteluke.meetmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlC_fvda_8gLfSfBz6EtB4GW_4WYesvx0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
