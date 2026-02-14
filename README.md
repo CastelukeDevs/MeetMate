@@ -335,6 +335,18 @@ Ensure the app has microphone permissions:
 | `SUPABASE_ANON_KEY` | Supabase anonymous key |
 | `OPENAI_API_KEY`    | OpenAI API key         |
 
-## License
+## Architecture Decision Notes
 
-This project is private and not licensed for public use.
+See [`docs/architecture-decisions/README.md`](docs/architecture-decisions/README.md) for key architectural decisions and a list of areas to refine and prioritize in future development, including:
+
+- Social login for authentication
+- Supabase Functions for backend processing
+- Notification page in app
+- Speaker differentiation in transcripts
+- Custom widgets
+- Media session/Now Playing integration
+- Realtime transcription
+- Meeting tagging, search, sort, and filter
+- Download options for recordings and transcripts
+
+---
