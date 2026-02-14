@@ -42,12 +42,8 @@ function Index() {
       setUploading(true);
       setUploadProgress(0);
 
-      // Get file info for logging
-      const fileInfo = await getAudioFileInfo(uri);
-      console.log("📁 Recording file info:");
-      console.log(`  Filename: ${fileInfo.filename}`);
-      console.log(`  Type: ${fileInfo.filetype}`);
-      console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
+      // Get file info
+      await getAudioFileInfo(uri);
 
       // Upload to Supabase with progress tracking
       const result = await uploadAudioToSupabase(
@@ -64,7 +60,6 @@ function Index() {
       );
 
       await processMeetingTranscript(saveResult.id, saveResult.recording);
-      console.log("Meeting transcript processing started");
       setRecordingSession(Date.now());
       router.push("/(tabs)/meetings");
     } catch (error) {
@@ -143,7 +138,21 @@ function Index() {
           <Button
             variant="outline"
             size="sm"
-            onPress={() => triggerTestNotification(TEST_MEETING_ID)}
+            onPress={async () => {
+              try {
+                await triggerTestNotification(TEST_MEETING_ID);
+              } catch (error) {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to send test notification";
+                toast({
+                  title: "Error",
+                  description: message,
+                  variant: "error",
+                });
+              }
+            }}
           >
             Test Notification
           </Button>

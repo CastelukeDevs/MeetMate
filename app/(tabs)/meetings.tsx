@@ -4,7 +4,7 @@ import { useToast } from "@/components/ui/toast";
 import { Meetings } from "@/types/meeting.types";
 import { getMeetings } from "@/utils/meetingManager";
 import { router, useFocusEffect } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -19,12 +19,11 @@ const MeetingsScreen = () => {
     router.push(`/meeting/${id}`);
   };
 
-  const fetchMeetingList = async () => {
+  const fetchMeetingList = useCallback(async () => {
     try {
       const meetings = await getMeetings();
       if (meetings) {
         setMeetingList(meetings);
-        console.log("current meetings", meetings);
       }
     } catch (error) {
       const message =
@@ -35,23 +34,25 @@ const MeetingsScreen = () => {
         variant: "error",
       });
     }
-  };
+  }, [toast]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchMeetingList();
-    setRefreshing(false);
+    try {
+      await fetchMeetingList();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
     fetchMeetingList();
-    return () => {};
-  }, []);
+  }, [fetchMeetingList]);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       fetchMeetingList();
-    }, []),
+    }, [fetchMeetingList]),
   );
 
   return (

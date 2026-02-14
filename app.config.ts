@@ -7,7 +7,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "1.0.0",
   owner: "castelukedevs",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
   scheme: "meetmate",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
@@ -18,14 +17,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       UIBackgroundModes: ["audio"],
       ITSAppUsesNonExemptEncryption: false,
     },
+    icon: {
+      dark: "./assets/images/ios-dark.png",
+      light: "./assets/images/ios-light.png",
+      tinted: "./assets/images/ios-tinted.png",
+    },
   },
   android: {
     package: "com.castelukedevs.meetmate",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
+      foregroundImage: "./assets/images/adaptive-icon.png",
+      monochromeImage: "./assets/images/adaptive-icon.png",
     },
     edgeToEdgeEnabled: true,
     permissions: ["RECORD_AUDIO", "FOREGROUND_SERVICE"],
@@ -40,11 +43,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
+        image: "./assets/images/splash-icon-dark.png",
         imageWidth: 200,
         resizeMode: "contain",
         backgroundColor: "#ffffff",
         dark: {
+          image: "./assets/images/splash-icon-light.png",
           backgroundColor: "#000000",
         },
       },

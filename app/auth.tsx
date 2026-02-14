@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { GroupedInput, GroupedInputItem } from "@/components/ui/input";
+import { MeetMateLogo } from "@/components/ui/meetmate-logo";
 import { Text } from "@/components/ui/text";
 import { useToast } from "@/components/ui/toast";
 import { useColor } from "@/hooks/useColor";
 import { supabase } from "@/utils/supabase";
-import { Eye, EyeClosed, Lock, Mail, NotebookPen } from "lucide-react-native";
+import { Eye, EyeClosed, Lock, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
@@ -61,27 +62,35 @@ const Auth = () => {
 
     if (!isValid) return;
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
 
-    if (error) {
-      setFormError({ key: "general", message: error.message });
-      console.log("error", error.message);
-      return;
+      if (error) {
+        setFormError({ key: "general", message: error.message });
+        return;
+      }
+      toast({
+        title: "Sign Up Success",
+        description:
+          "Account created successfully. Please sign in with your new account.",
+        variant: "success",
+      });
+
+      setIsSignIn(true);
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign up failed";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "error",
+      });
     }
-    toast({
-      title: "Sign Up Success",
-      description:
-        "Account created successfully. Please sign in with your new account.",
-      variant: "success",
-    });
-
-    setIsSignIn(true);
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
   }
 
   async function signInHandler() {
@@ -89,30 +98,31 @@ const Auth = () => {
 
     if (!isValid) return;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
-    if (error) {
-      setFormError({ key: "general", message: error.message });
-      console.log("error", error.message);
-      return;
+      if (error) {
+        setFormError({ key: "general", message: error.message });
+        return;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign in failed";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "error",
+      });
     }
-
-    console.log("");
   }
 
   return (
     <View style={styles.root}>
       <View style={styles.headerContainer}>
         <View style={styles.brandingContainer}>
-          <View style={[styles.logoContainer, { borderColor: color }]}>
-            <NotebookPen size={32} color={color} />
-          </View>
-          <Text variant="title" style={{ color: color }}>
-            Meet Mate
-          </Text>
+          <MeetMateLogo size={80} />
         </View>
       </View>
       <View style={styles.bodyContainer}>
@@ -215,18 +225,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: "center" },
   headerContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   brandingContainer: {
-    flexDirection: "row",
     gap: 8,
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-  logoContainer: {
-    width: 46,
-    height: 46,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderRadius: 16,
   },
-  bodyContainer: { flex: 3, gap: 16, paddingHorizontal: 24 },
+  bodyContainer: { flex: 2, gap: 16, paddingHorizontal: 24 },
 });

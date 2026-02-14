@@ -81,13 +81,8 @@ export async function uploadAudioToSupabase(
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<UploadResult> {
   try {
-    // Get file info for logging
+    // Get file info
     const fileInfo = await getAudioFileInfo(uri);
-
-    console.log("📁 Audio File Info:");
-    console.log(`  Filename: ${fileInfo.filename}`);
-    console.log(`  Type: ${fileInfo.filetype}`);
-    console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
 
     // Use expo-file-system File which implements Blob interface
     const file = new File(uri);
@@ -136,7 +131,6 @@ export async function uploadAudioToSupabase(
 
         onProgress: (bytesUploaded, bytesTotal) => {
           const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
-          console.log(`📤 Upload progress: ${percentage}%`);
 
           onProgress?.({
             bytesUploaded,
@@ -148,9 +142,6 @@ export async function uploadAudioToSupabase(
         onSuccess: () => {
           // Construct the public URL
           const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`;
-
-          console.log("✅ Upload complete!");
-          console.log(`📍 URL: ${publicUrl}`);
 
           resolve({
             url: publicUrl,
@@ -183,11 +174,6 @@ export async function uploadAudioSimple(
 ): Promise<UploadResult> {
   try {
     const fileInfo = await getAudioFileInfo(uri);
-
-    console.log("📁 Audio File Info:");
-    console.log(`  Filename: ${fileInfo.filename}`);
-    console.log(`  Type: ${fileInfo.filetype}`);
-    console.log(`  Size: ${fileInfo.sizeFormatted} (${fileInfo.size} bytes)`);
 
     // Use expo-file-system File which implements Blob interface
     const file = new File(uri);
@@ -224,15 +210,11 @@ export async function uploadAudioSimple(
       data: { publicUrl },
     } = supabase.storage.from(bucketName).getPublicUrl(data.path);
 
-    console.log("✅ Upload complete!");
-    console.log(`📍 URL: ${publicUrl}`);
-
     return {
       url: publicUrl,
       fileInfo,
     };
   } catch (error) {
-    console.error("❌ Upload error:", error);
     throw error instanceof Error ? error : new Error("Upload failed");
   }
 }

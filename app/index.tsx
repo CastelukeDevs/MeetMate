@@ -10,8 +10,6 @@ export default function Index() {
   const { isLoading, isLoggedIn } = useAuthContext();
   const { isFirstTime } = useAppDefault();
 
-  console.log("isFirstTime? index?", isFirstTime);
-
   useEffect(() => {
     if (!isLoading) {
       SplashScreen.hideAsync();

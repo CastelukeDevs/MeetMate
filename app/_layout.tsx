@@ -65,7 +65,6 @@ async function registerForPushNotificationsAsync() {
           projectId,
         })
       ).data;
-      console.log("Push token:", pushTokenString);
       return pushTokenString;
     } catch (e: unknown) {
       handleRegistrationError(`${e}`);
@@ -83,7 +82,6 @@ function RootNavigation() {
     registerForPushNotificationsAsync()
       .then((token) => {
         if (token) {
-          console.log("Token registered:", token);
           setNotificationToken?.(token);
         }
       })
@@ -93,14 +91,13 @@ function RootNavigation() {
     handleLastNotificationResponse();
 
     const notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Notification received:", notification);
+      () => {
+        // Notification received while app is foregrounded
       },
     );
 
     const responseListener =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("Notification tapped:", response);
         handleNotificationResponse(response);
       });
 

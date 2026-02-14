@@ -97,7 +97,19 @@ export default function MeScreen() {
           } catch (error) {
             console.error("Logout error:", error);
             // Still try to sign out even if token removal fails
-            await supabase.auth.signOut();
+            try {
+              await supabase.auth.signOut();
+            } catch (signOutError) {
+              const message =
+                signOutError instanceof Error
+                  ? signOutError.message
+                  : "Failed to logout";
+              toast({
+                title: "Error",
+                description: message,
+                variant: "error",
+              });
+            }
           } finally {
             setIsLoggingOut(false);
           }

@@ -20,7 +20,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     const fetchSession = async () => {
       setIsLoading(true);
-
       const {
         data: { session },
         error,
@@ -29,8 +28,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       if (error) {
         console.error("Error fetching session:", error);
       }
-
-      setSession(session);
       setIsLoading(false);
     };
 
@@ -39,7 +36,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", { event: _event, session });
       setSession(session);
     });
 
@@ -50,8 +46,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const notificationToken = useAppDefault((state) => state.notificationToken);
-
-  console.log("notificationToken in useAuthContext:", notificationToken);
 
   // Fetch the profile when the session changes
   useEffect(() => {
