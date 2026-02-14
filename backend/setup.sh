@@ -4,6 +4,12 @@ cd "$(dirname "$0")"
 
 echo "Setting up MeetMate Backend..."
 
+# Remove old venv if exists (paths become stale if project is moved)
+if [ -d "venv" ]; then
+    echo "Removing old virtual environment..."
+    rm -rf venv
+fi
+
 # Create virtual environment
 echo "Creating virtual environment..."
 python3 -m venv venv

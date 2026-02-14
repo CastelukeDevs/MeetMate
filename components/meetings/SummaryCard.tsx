@@ -2,9 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
-import { ChevronDown, ChevronUp } from "lucide-react-native";
+import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react-native";
 import React, { useRef, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,9 +20,17 @@ const COLLAPSED_HEIGHT = 130;
 
 interface SummaryCardProps {
   summary?: string;
+  inProgress?: boolean | null;
+  onRetry?: () => void;
+  retrying?: boolean;
 }
 
-export function SummaryCard({ summary }: SummaryCardProps) {
+export function SummaryCard({
+  summary,
+  inProgress,
+  onRetry,
+  retrying,
+}: SummaryCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showExpandButton, setShowExpandButton] = useState(false);
   const contentHeightRef = useRef(0);
@@ -36,6 +49,9 @@ export function SummaryCard({ summary }: SummaryCardProps) {
       { duration: 300 },
     );
   };
+
+  const isPending = inProgress === null;
+  const isProcessing = inProgress === true;
 
   return (
     <Card>
@@ -77,6 +93,27 @@ export function SummaryCard({ summary }: SummaryCardProps) {
               </TouchableOpacity>
             )}
           </View>
+        ) : isPending ? (
+          <TouchableOpacity
+            style={styles.retryContainer}
+            onPress={onRetry}
+            disabled={retrying}
+          >
+            {retrying ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Icon name={RefreshCw} size={24} />
+            )}
+            <Text variant="caption" style={styles.retryText}>
+              {retrying ? "Processing..." : "Tap to process transcription"}
+            </Text>
+          </TouchableOpacity>
+        ) : isProcessing ? (
+          <View style={styles.skeletonGap}>
+            <Skeleton width="100%" height={16} variant="rounded" />
+            <Skeleton width="100%" height={16} variant="rounded" />
+            <Skeleton width="80%" height={16} variant="rounded" />
+          </View>
         ) : (
           <View style={styles.skeletonGap}>
             <Skeleton width="100%" height={16} variant="rounded" />
@@ -107,5 +144,14 @@ const styles = StyleSheet.create({
   },
   skeletonGap: {
     gap: 8,
+  },
+  retryContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 8,
+  },
+  retryText: {
+    opacity: 0.7,
   },
 });

@@ -7,6 +7,7 @@ import { Text } from "@/components/ui/text";
 import { useToast } from "@/components/ui/toast";
 import { Meetings } from "@/types/meeting.types";
 import { getMeetingById } from "@/utils/meetingManager";
+import { processMeetingById } from "@/utils/processTranscript";
 import { getSignedUrl } from "@/utils/uploadAudio";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -21,6 +22,7 @@ export default function MeetingScreen() {
 
   const [meetings, setMeetings] = useState<Meetings>();
   const [audioUrl, setAudioUrl] = useState<string>();
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     const fetchMeetingDetail = async () => {
@@ -49,6 +51,32 @@ export default function MeetingScreen() {
     fetchMeetingDetail();
   }, [id, toast]);
 
+  const handleRetry = async () => {
+    if (!id || retrying) return;
+
+    setRetrying(true);
+    try {
+      await processMeetingById(id);
+      // Update local state to show processing
+      setMeetings((prev) => (prev ? { ...prev, inProgress: true } : prev));
+      toast({
+        title: "Processing Started",
+        description: "Your meeting is being transcribed",
+        variant: "success",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to start processing";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "error",
+      });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
   return (
     <ScrollView
       style={[styles.container, { paddingTop: top }]}
@@ -75,9 +103,19 @@ export default function MeetingScreen() {
 
       <MeetingHeader name={meetings?.name} createdAt={meetings?.created_at} />
 
-      <SummaryCard summary={meetings?.summary?.text} />
+      <SummaryCard
+        summary={meetings?.summary?.text}
+        inProgress={meetings?.inProgress}
+        onRetry={handleRetry}
+        retrying={retrying}
+      />
 
-      <TranscriptCard segments={meetings?.annotation} />
+      <TranscriptCard
+        segments={meetings?.annotation}
+        inProgress={meetings?.inProgress}
+        onRetry={handleRetry}
+        retrying={retrying}
+      />
     </ScrollView>
   );
 }

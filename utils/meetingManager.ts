@@ -13,7 +13,6 @@ export const createNewMeeting = async (audio_url: string, name: string) => {
 
   const newMeeting: IMeeting = {
     users: user?.id,
-    inProgress: true,
     name,
     recording: audio_url,
   };

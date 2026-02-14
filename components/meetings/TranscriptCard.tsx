@@ -1,9 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { formatDuration } from "@/utils/time";
+import { RefreshCw } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface TranscriptSegment {
   start: number;
@@ -13,9 +20,20 @@ interface TranscriptSegment {
 
 interface TranscriptCardProps {
   segments?: TranscriptSegment[];
+  inProgress?: boolean | null;
+  onRetry?: () => void;
+  retrying?: boolean;
 }
 
-export function TranscriptCard({ segments }: TranscriptCardProps) {
+export function TranscriptCard({
+  segments,
+  inProgress,
+  onRetry,
+  retrying,
+}: TranscriptCardProps) {
+  const isPending = inProgress === null;
+  const isProcessing = inProgress === true;
+
   return (
     <Card>
       <CardHeader>
@@ -31,6 +49,30 @@ export function TranscriptCard({ segments }: TranscriptCardProps) {
                   {formatDuration(segment.end)}
                 </Text>
                 <Text>{segment.text}</Text>
+              </View>
+            ))}
+          </View>
+        ) : isPending ? (
+          <TouchableOpacity
+            style={styles.retryContainer}
+            onPress={onRetry}
+            disabled={retrying}
+          >
+            {retrying ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Icon name={RefreshCw} size={24} />
+            )}
+            <Text variant="caption" style={styles.retryText}>
+              {retrying ? "Processing..." : "Tap to process transcription"}
+            </Text>
+          </TouchableOpacity>
+        ) : isProcessing ? (
+          <View style={styles.skeletonGapLarge}>
+            {[1, 2, 3].map((i) => (
+              <View key={i} style={styles.segmentGap}>
+                <Skeleton width={80} height={12} variant="rounded" />
+                <Skeleton width="100%" height={16} variant="rounded" />
               </View>
             ))}
           </View>
@@ -61,5 +103,14 @@ const styles = StyleSheet.create({
   },
   skeletonGapLarge: {
     gap: 12,
+  },
+  retryContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 8,
+  },
+  retryText: {
+    opacity: 0.7,
   },
 });

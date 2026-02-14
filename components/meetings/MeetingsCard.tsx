@@ -41,8 +41,20 @@ export const MeetingsCard = ({ data, onPress }: MeetingsCardProps) => {
         <CardContent>
           <View style={styles.cardContentGap}>
             <View style={styles.badgeRow}>
-              <Badge variant={data.inProgress ? "outline" : "success"}>
-                {data.inProgress ? "Processing" : "Completed"}
+              <Badge
+                variant={
+                  data.inProgress === null
+                    ? "destructive"
+                    : data.inProgress
+                      ? "outline"
+                      : "success"
+                }
+              >
+                {data.inProgress === null
+                  ? "Pending"
+                  : data.inProgress
+                    ? "Processing"
+                    : "Completed"}
               </Badge>
             </View>
             {data.summary && <Text>{data.summary.short}</Text>}

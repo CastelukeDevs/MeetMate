@@ -11,7 +11,7 @@ export type Meetings = {
   name: string;
   annotation?: TranscriptSegment[];
   summary?: Summary;
-  inProgress: boolean;
+  inProgress: boolean | null;
   recording: string;
 };
 

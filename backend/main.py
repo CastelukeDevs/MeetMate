@@ -160,10 +160,19 @@ def process_meeting_background(
     audio_url: str,
     meeting_id: str,
     user_id: str,
-    access_token: str
+    access_token: str,
+    meeting_name: str = "Your meeting"
 ):
     """Background task to process meeting transcription"""
     try:
+        # Mark meeting as in progress
+        supabase_request(
+            "PATCH",
+            f"meetings?id=eq.{meeting_id}",
+            access_token,
+            {"inProgress": True}
+        )
+        
         # Get user profile for device token
         profiles = supabase_request(
             "GET",
@@ -226,7 +235,7 @@ def process_meeting_background(
                         json={
                             "to": device_token,
                             "title": "Transcription Complete",
-                            "body": "Your meeting has been transcribed and summarized.",
+                            "body": f"\"{meeting_name}\" has been transcribed and summarized.",
                             "data": {"meeting_id": meeting_id},
                             "sound": "default"
                         },
@@ -254,7 +263,7 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
         # Verify session is valid by checking meeting exists and get user id
         meetings = supabase_request(
             "GET",
-            f"meetings?id=eq.{request.meeting_id}&select=id,users",
+            f"meetings?id=eq.{request.meeting_id}&select=id,users,name",
             request.session.access_token
         )
         
@@ -265,6 +274,7 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
             )
         
         user_id = meetings[0].get("users")
+        meeting_name = meetings[0].get("name", "Your meeting")
         
         # Add background task
         background_tasks.add_task(
@@ -272,7 +282,8 @@ async def process_meeting(request: ProcessMeetingRequest, background_tasks: Back
             request.audio_url,
             request.meeting_id,
             user_id,
-            request.session.access_token
+            request.session.access_token,
+            meeting_name
         )
         
         return ProcessMeetingResponse(
