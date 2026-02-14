@@ -1,12 +1,12 @@
-import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 
 /**
  * Deeplink scheme: meetmate://
- * 
+ *
  * Supported paths:
  * - meetmate://meeting/:id - Opens a specific meeting
- * 
+ *
  * Notification data format:
  * - { meeting_id: string } - Opens meeting detail
  */
@@ -54,7 +54,7 @@ export function parseDeeplink(url: string): DeeplinkData {
  * Parse notification data into deeplink data
  */
 export function parseNotificationData(
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): DeeplinkData | null {
   if (data?.meeting_id && typeof data.meeting_id === "string") {
     return { type: "meeting", id: data.meeting_id };
@@ -83,11 +83,11 @@ export function navigateToDeeplink(data: DeeplinkData): boolean {
  * Handle a notification response (tap)
  */
 export function handleNotificationResponse(
-  response: Notifications.NotificationResponse
+  response: Notifications.NotificationResponse,
 ): boolean {
   const data = response.notification.request.content.data;
   const deeplinkData = parseNotificationData(data);
-  
+
   if (deeplinkData) {
     return navigateToDeeplink(deeplinkData);
   }
@@ -117,7 +117,9 @@ export function handleUrlDeeplink(url: string): boolean {
  * Trigger a test notification matching backend format
  * Only use in development
  */
-export async function triggerTestNotification(meetingId: string): Promise<void> {
+export async function triggerTestNotification(
+  meetingId: string,
+): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "Transcription Complete",

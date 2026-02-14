@@ -14,6 +14,7 @@ import {
   uploadAudioToSupabase,
   type UploadProgress,
 } from "@/utils/uploadAudio";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 
@@ -65,6 +66,7 @@ function Index() {
       await processMeetingTranscript(saveResult.id, saveResult.recording);
       console.log("Meeting transcript processing started");
       setRecordingSession(Date.now());
+      router.push("/(tabs)/meetings");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to upload recording";
@@ -94,59 +96,59 @@ function Index() {
 
   return (
     <>
-    <View style={styles.container}>
-      <View style={styles.recorderWrapper}>
-        <AudioRecorder
-          sessionId={recordingSession}
-          quality="high"
-          showWaveform={true}
-          showTimer={true}
-          maxDuration={1 * 60 * 60} // 1 hour
-          onSaveRecording={handleSaveRecording}
-        />
+      <View style={styles.container}>
+        <View style={styles.recorderWrapper}>
+          <AudioRecorder
+            sessionId={recordingSession}
+            quality="high"
+            showWaveform={true}
+            showTimer={true}
+            maxDuration={1 * 60 * 60} // 1 hour
+            onSaveRecording={handleSaveRecording}
+          />
 
-        {uploading && (
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="small" />
-            <Text variant="caption" style={styles.uploadingText}>
-              Uploading... {uploadProgress}%
-            </Text>
+          {uploading && (
+            <View style={styles.uploadingContainer}>
+              <ActivityIndicator size="small" />
+              <Text variant="caption" style={styles.uploadingText}>
+                Uploading... {uploadProgress}%
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <BottomSheet
+          isVisible={saveSheet.isVisible}
+          onClose={handleSheetClosed}
+          title="Save your meeting recording"
+        >
+          <View style={styles.sheetContent}>
+            <Input
+              label="Meeting Name"
+              placeholder="Enter meeting name"
+              value={defaultMeetingName}
+              onChangeText={setDefaultMeetingName}
+              variant="outline"
+            />
+            <Button variant="success" onPress={handleRecordingComplete}>
+              Save
+            </Button>
           </View>
-        )}
+        </BottomSheet>
       </View>
 
-      <BottomSheet
-        isVisible={saveSheet.isVisible}
-        onClose={handleSheetClosed}
-        title="Save your meeting recording"
-      >
-        <View style={styles.sheetContent}>
-          <Input
-            label="Meeting Name"
-            placeholder="Enter meeting name"
-            value={defaultMeetingName}
-            onChangeText={setDefaultMeetingName}
+      {/* Test notification button - remove in production */}
+      {__DEV__ && (
+        <View style={styles.testButtonContainer}>
+          <Button
             variant="outline"
-          />
-          <Button variant="success" onPress={handleRecordingComplete}>
-            Save
+            size="sm"
+            onPress={() => triggerTestNotification(TEST_MEETING_ID)}
+          >
+            Test Notification
           </Button>
         </View>
-      </BottomSheet>
-    </View>
-
-    {/* Test notification button - remove in production */}
-    {__DEV__ && (
-      <View style={styles.testButtonContainer}>
-        <Button
-          variant="outline"
-          size="sm"
-          onPress={() => triggerTestNotification(TEST_MEETING_ID)}
-        >
-          Test Notification
-        </Button>
-      </View>
-    )}
+      )}
     </>
   );
 }
